@@ -1,6 +1,6 @@
 # SecurityEval_Project
 
-AI information security course project by Ruimeng Chen, Shuqi Zhong, and Jiayi Li.
+AI information security course project by Ruimeng Chen, Susie Zhong, and Jiayi Li.
 
 This project evaluates LLM-generated Python code using **Bandit, custom AST rules,
 and functional and security tests**. We will compare the findings from these methods
