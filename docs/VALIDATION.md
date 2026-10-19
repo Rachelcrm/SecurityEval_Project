@@ -1,0 +1,31 @@
+# Scaffold validation — 2026-10-19
+
+These are actual local harness checks on macOS arm64, Python **3.11.17**.
+They are not candidate functionality/security results and are not GitHub CI results.
+
+| Check | Observed result |
+|---|---|
+| Install pinned requirements and editable package | Successful |
+| `python -m pytest -q` | **23 passed in 1.03s** in the installed project |
+| `python -m pip check` | No broken requirements found |
+| `python scripts/verify_source.py --download` | 3 original prompts verified against pinned upstream data |
+| `security-eval samples` | 3 validated sample records listed |
+| Dry-run preparation for each of the 3 samples | `prepared`; no API call and no generated code |
+| `git diff --check` | No whitespace errors |
+
+The tests exercise contract rejection, duplicate sample handling, pending analyzer
+states, code extraction, missing credentials, API failure, empty/invalid/incomplete
+outputs, preservation of raw output, prevention of candidate execution, the real
+OpenAI SDK with an explicitly mocked HTTP transport, and pipeline hash checks.
+Synthetic fixture responses exist only in temporary test directories.
+
+## Not run / not implemented
+
+- No live model request: API credentials and final model choice are pending.
+- No Bandit or custom AST scan: Member 2 adapters are placeholders returning `not_run`.
+- No candidate functional/security pytest or Docker execution: Member 3 integration is pending.
+- No security score, vulnerability discovery, detector comparison, or repair claim.
+
+Prepared local artifacts are ignored by Git. Repeatable commands and interfaces are
+in the README and INTERFACES.md. Run the next real experiment in a fresh output
+directory to preserve the original records.

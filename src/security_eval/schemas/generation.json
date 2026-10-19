@@ -1,0 +1,283 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "sample_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "status": {
+      "enum": [
+        "prepared",
+        "generated",
+        "error"
+      ]
+    },
+    "provider": {
+      "const": "openai"
+    },
+    "requested_model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "returned_model": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "request_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sample_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "request_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "response_file": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "raw_output_file": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "code_file": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "code_sha256": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "syntax_valid": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "response_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "usage": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "type",
+            "message"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "sample_id",
+    "status",
+    "provider",
+    "requested_model",
+    "returned_model",
+    "created_at",
+    "completed_at",
+    "request_file",
+    "sample_file",
+    "request_sha256",
+    "response_file",
+    "raw_output_file",
+    "code_file",
+    "code_sha256",
+    "syntax_valid",
+    "response_id",
+    "usage",
+    "error"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "prepared"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "completed_at": {
+            "type": "null"
+          },
+          "code_file": {
+            "type": "null"
+          },
+          "code_sha256": {
+            "type": "null"
+          },
+          "response_file": {
+            "type": "null"
+          },
+          "raw_output_file": {
+            "type": "null"
+          },
+          "syntax_valid": {
+            "type": "null"
+          },
+          "response_id": {
+            "type": "null"
+          },
+          "returned_model": {
+            "type": "null"
+          },
+          "usage": {
+            "type": "null"
+          },
+          "error": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "generated"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "code_file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "code_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "syntax_valid": {
+            "const": true
+          },
+          "response_file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "raw_output_file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "error"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "type": "object"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
