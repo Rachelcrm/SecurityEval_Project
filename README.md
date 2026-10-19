@@ -151,7 +151,7 @@ no findings.
 
 | Member | Primary files and directories | Expected deliverables |
 |---|---|---|
-| Member 1 / Shuqi | `data/`, `generation.py`, `scripts/verify_source.py` | Three live-generated candidates with request and response records |
+| Member 1 / Susie Zhong | `data/`, `generation.py`, `scripts/verify_source.py` | Three live-generated candidates with request and response records |
 | Member 2 | `analyzers/static.py`, new rule modules, and rule unit tests | Bandit integration, one or two AST rules, and actual JSON findings |
 | Member 3 | `analyzers/dynamic.py`, `tests/candidates/`, `docker/` | Isolated execution, functional and security tests, and supporting evidence |
 
