@@ -12,8 +12,11 @@ before exploring LLM-based repair. Automated repair is outside the first-week sc
   SecurityEval, shared JSON schemas, Member 1's OpenAI Responses API generation and
   artifact recording, offline harness tests, and integration points for all three members.
 - Not yet run: live LLM generation. API credentials and the final model choice are pending.
-- Not yet implemented: Bandit and AST analysis, the Docker runner, and candidate
-  functional and security tests. The analyzer adapters currently return `not_run`.
+- Implemented (Member 2): Bandit integration, two custom AST rules validated on hand-written
+  fixtures, and `security-eval static`. See [Static Analysis](docs/STATIC_ANALYSIS.md).
+  No LLM-generated candidate has been scanned yet.
+- Not yet implemented: the Docker runner and candidate functional and security tests.
+  The dynamic adapter currently returns `not_run`.
 - By default, `pytest` tests the harness only. **Passing harness tests does not establish
   the functionality or security of generated code.** The `generated` status indicates
   a complete response containing parseable Python and the expected entry point;
@@ -138,7 +141,15 @@ security-eval evaluate artifacts/sql-live-001 --out artifacts/sql-analysis-001
 security-eval validate analysis artifacts/sql-analysis-001/bandit.json
 ```
 
-All three adapters currently return `not_run`, so `evaluate` returns a nonzero exit code.
+Bandit and AST adapters run; the dynamic adapter still returns `not_run`, so `evaluate`
+returns a nonzero exit code. To run only static analysis on one or more candidates:
+
+```bash
+security-eval static artifacts/sql-live-001 --out artifacts/sql-static-001
+```
+
+This prints a summary and writes `static_summary.json` plus per-tool contracts and evidence;
+see [Static Analysis](docs/STATIC_ANALYSIS.md).
 The pipeline verifies the candidate's code hash to ensure that each analyzer receives
 the same source. It does not execute candidate code.
 
@@ -152,7 +163,7 @@ no findings.
 | Member | Primary files and directories | Expected deliverables |
 |---|---|---|
 | Member 1 / Susie Zhong | `data/`, `generation.py`, `scripts/verify_source.py` | Three live-generated candidates with request and response records |
-| Member 2 | `analyzers/static.py`, new rule modules, and rule unit tests | Bandit integration, one or two AST rules, and actual JSON findings |
+| Member 2 / Jiayi Li| `analyzers/static.py`, new rule modules, and rule unit tests | Bandit integration, one or two AST rules, and actual JSON findings |
 | Member 3 | `analyzers/dynamic.py`, `tests/candidates/`, `docker/` | Isolated execution, functional and security tests, and supporting evidence |
 
 See [Shared Contracts](docs/INTERFACES.md) for the complete handoff. Start with

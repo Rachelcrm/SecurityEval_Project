@@ -7,7 +7,6 @@ import pytest
 from jsonschema import ValidationError
 
 from security_eval.contracts import load_samples, validate
-from security_eval.analyzers.static import BanditAnalyzer, ASTAnalyzer
 from security_eval.analyzers.dynamic import DockerPytestAnalyzer
 
 SAMPLES = Path(__file__).resolve().parents[2] / "data/samples.jsonl"
@@ -43,7 +42,7 @@ def test_duplicate_samples_are_rejected(tmp_path):
         load_samples(path)
 
 
-@pytest.mark.parametrize("analyzer", [BanditAnalyzer(), ASTAnalyzer(), DockerPytestAnalyzer()])
+@pytest.mark.parametrize("analyzer", [DockerPytestAnalyzer()])
 def test_unimplemented_analyzers_cannot_claim_success(analyzer, tmp_path):
     code = tmp_path / "fixture.py"
     code.write_text("raise RuntimeError('must never execute')\n")
