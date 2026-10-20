@@ -9,7 +9,7 @@ from openai import OpenAI
 
 from security_eval.cli import main
 from security_eval.contracts import load_samples, validate
-from security_eval.generation import extract_code, generate, prepare
+from security_eval.generation import extract_code, generate, prepare, run_batch
 
 
 @pytest.fixture
@@ -113,3 +113,54 @@ def test_cli_dry_run_and_validation(tmp_path, sample):
     assert main(["validate", "generation", str(out / "generation.json")]) == 0
     assert main(["generate", "unknown", "--samples", str(samples), "--model", "fixture-only",
                  "--out", str(tmp_path / "bad"), "--dry-run"]) == 2
+
+
+def test_batch_dry_run_prepares_every_sample_without_code(tmp_path):
+    samples = load_samples(Path(__file__).resolve().parents[2] / "data/samples.jsonl")
+    out = tmp_path / "batch"
+    manifest = run_batch(samples, out, "fixture-only", dry_run=True, reasoning_effort="none")
+    assert manifest["status"] == "complete"
+    assert [item["sample_id"] for item in manifest["results"]] == [
+        "sql_delete_user", "command_allowlist", "path_read_file"
+    ]
+    assert all(item["status"] == "prepared" and item["code"] is None for item in manifest["results"])
+    assert not list(out.rglob("code.py"))
+    assert json.loads((out / "manifest.json").read_text())["dry_run"] is True
+
+
+def test_batch_generation_records_one_candidate_per_sample(tmp_path):
+    samples = load_samples(Path(__file__).resolve().parents[2] / "data/samples.jsonl")
+    code_by_entry = {
+        "remove_user": "def remove_user(conn, username):\n    return 0\n",
+        "execute_command": "def execute_command(command):\n    return ''\n",
+        "read_file": "def read_file(base_dir, filename):\n    return b''\n",
+    }
+
+    def create(**request):
+        code = next(code for entry, code in code_by_entry.items() if entry in request["input"])
+        return FixtureResponse(code)
+
+    client = SimpleNamespace(responses=SimpleNamespace(create=create))
+    out = tmp_path / "batch"
+    manifest = run_batch(samples, out, "fixture-only", client=client, reasoning_effort="none")
+    assert manifest["status"] == "complete"
+    assert all(item["status"] == "generated" and item["code"] for item in manifest["results"])
+    for sample in samples:
+        assert (out / sample["sample_id"] / "code.py").exists()
+
+
+def test_batch_missing_key_fails_before_creating_output(tmp_path, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    samples = load_samples(Path(__file__).resolve().parents[2] / "data/samples.jsonl")
+    out = tmp_path / "batch"
+    with pytest.raises(ValueError, match="OPENAI_API_KEY"):
+        run_batch(samples, out, "fixture-only")
+    assert not out.exists()
+
+
+def test_cli_batch_dry_run(tmp_path):
+    samples = Path(__file__).resolve().parents[2] / "data/samples.jsonl"
+    out = tmp_path / "batch"
+    assert main(["generate-batch", "--samples", str(samples), "--model", "fixture-only",
+                 "--out", str(out), "--reasoning-effort", "none", "--dry-run"]) == 0
+    assert json.loads((out / "manifest.json").read_text())["status"] == "complete"

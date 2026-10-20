@@ -2,6 +2,7 @@
 
 import ast
 import hashlib
+import json
 import os
 import re
 from pathlib import Path
@@ -71,7 +72,6 @@ def generate(sample: dict, out: Path, model: str, *, client=None, **parameters) 
         from openai import OpenAI
         client = OpenAI(base_url="https://api.openai.com/v1", timeout=90, max_retries=0)
     record = prepare(sample, out, model, **parameters)
-    import json
     request = json.loads((out / "request.json").read_text(encoding="utf-8"))
     try:
         response = client.responses.create(**request)
@@ -108,3 +108,55 @@ def generate(sample: dict, out: Path, model: str, *, client=None, **parameters) 
     validate("generation", record)
     write_json(out / "generation.json", record)
     return record
+
+
+def run_batch(samples: list[dict], out: Path, model: str, *, dry_run: bool = False,
+              client=None, **parameters) -> dict:
+    """Create exactly one auditable attempt for every selected sample."""
+    if not samples:
+        raise ValueError("No samples selected")
+    if not model.strip():
+        raise ValueError("An explicit model ID is required")
+    owned_client = None
+    if not dry_run and client is None:
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise ValueError("OPENAI_API_KEY is not set; use --dry-run to prepare without an API call")
+        from openai import OpenAI
+        owned_client = OpenAI(base_url="https://api.openai.com/v1", timeout=90, max_retries=0)
+        client = owned_client
+
+    out.mkdir(parents=True, exist_ok=False)
+    started_at = utc_now()
+    results = []
+    operation = prepare if dry_run else generate
+    try:
+        for sample in samples:
+            sample_out = out / sample["sample_id"]
+            call_parameters = dict(parameters)
+            if not dry_run:
+                call_parameters["client"] = client
+            record = operation(sample, sample_out, model, **call_parameters)
+            results.append({
+                "sample_id": sample["sample_id"],
+                "status": record["status"],
+                "record": f"{sample['sample_id']}/generation.json",
+                "code": f"{sample['sample_id']}/code.py" if record["code_file"] else None,
+            })
+    finally:
+        if owned_client is not None:
+            owned_client.close()
+
+    expected_status = "prepared" if dry_run else "generated"
+    manifest = {
+        "schema_version": "1.0",
+        "provider": "openai",
+        "model": model,
+        "dry_run": dry_run,
+        "parameters": parameters,
+        "started_at": started_at,
+        "completed_at": utc_now(),
+        "status": "complete" if all(item["status"] == expected_status for item in results) else "partial",
+        "results": results,
+    }
+    write_json(out / "manifest.json", manifest)
+    return manifest
