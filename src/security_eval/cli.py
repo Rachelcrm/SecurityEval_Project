@@ -7,7 +7,7 @@ from pathlib import Path
 from jsonschema.exceptions import ValidationError
 
 from .contracts import load_samples, validate
-from .generation import generate, prepare
+from .generation import generate, prepare, run_batch
 from .pipeline import evaluate
 
 
@@ -31,6 +31,14 @@ def main(argv=None) -> int:
     generation.add_argument("--temperature", type=float)
     generation.add_argument("--max-output-tokens", type=int, default=4096)
     generation.add_argument("--reasoning-effort", choices=["none", "minimal", "low", "medium", "high", "xhigh"])
+    batch = commands.add_parser("generate-batch", help="Generate one recorded attempt for every selected sample")
+    batch.add_argument("--samples", type=Path, default=Path("data/samples.jsonl"))
+    batch.add_argument("--model", default=os.environ.get("OPENAI_MODEL"))
+    batch.add_argument("--out", required=True, type=Path, help="New batch directory; existing results are never overwritten")
+    batch.add_argument("--dry-run", action="store_true")
+    batch.add_argument("--temperature", type=float)
+    batch.add_argument("--max-output-tokens", type=int, default=4096)
+    batch.add_argument("--reasoning-effort", choices=["none", "minimal", "low", "medium", "high", "xhigh"])
     args = parser.parse_args(argv)
     try:
         if args.command == "validate":
@@ -43,6 +51,17 @@ def main(argv=None) -> int:
             results = evaluate(args.run_dir, args.out)
             print(json.dumps({r["tool"]: r["status"] for r in results}))
             return 0 if all(r["status"] == "completed" for r in results) else 1
+        elif args.command == "generate-batch":
+            if not args.model:
+                raise ValueError("Set --model or OPENAI_MODEL explicitly")
+            manifest = run_batch(
+                load_samples(args.samples), args.out, args.model,
+                dry_run=args.dry_run, temperature=args.temperature,
+                max_output_tokens=args.max_output_tokens,
+                reasoning_effort=args.reasoning_effort,
+            )
+            print(json.dumps({"status": manifest["status"], "manifest": str(args.out / "manifest.json")}))
+            return 0 if manifest["status"] == "complete" else 1
         else:
             if not args.model:
                 raise ValueError("Set --model or OPENAI_MODEL explicitly")

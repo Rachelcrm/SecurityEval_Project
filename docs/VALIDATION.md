@@ -6,14 +6,15 @@ They are not candidate functionality/security results and are not GitHub CI resu
 | Check | Observed result |
 |---|---|
 | Install pinned requirements and editable package | Successful |
-| `python -m pytest -q` | **23 passed in 1.03s** in the installed project |
+| `python -m pytest -q` | **27 passed** in the installed project |
 | `python -m pip check` | No broken requirements found |
 | `python scripts/verify_source.py --download` | 3 original prompts verified against pinned upstream data |
 | `security-eval samples` | 3 validated sample records listed |
-| Dry-run preparation for each of the 3 samples | `prepared`; no API call and no generated code |
+| Batch dry-run preparation for all 3 samples | `complete`; each sample is `prepared`, with no API call or generated code |
 | `git diff --check` | No whitespace errors |
 
-The tests exercise contract rejection, duplicate sample handling, pending analyzer
+The tests exercise contract rejection, duplicate sample handling, batch preparation,
+credential checks before batch output creation, pending analyzer
 states, code extraction, missing credentials, API failure, empty/invalid/incomplete
 outputs, preservation of raw output, prevention of candidate execution, the real
 OpenAI SDK with an explicitly mocked HTTP transport, and pipeline hash checks.
@@ -21,7 +22,7 @@ Synthetic fixture responses exist only in temporary test directories.
 
 ## Not run / not implemented
 
-- No live model request: API credentials and final model choice are pending.
+- No live model request: the model is fixed, but local API credentials are pending.
 - No Bandit or custom AST scan: Member 2 adapters are placeholders returning `not_run`.
 - No candidate functional/security pytest or Docker execution: Member 3 integration is pending.
 - No security score, vulnerability discovery, detector comparison, or repair claim.
