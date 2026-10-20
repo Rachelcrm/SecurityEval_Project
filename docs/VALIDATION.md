@@ -22,11 +22,26 @@ Synthetic fixture responses exist only in temporary test directories.
 
 ## Not run / not implemented
 
-- No live model request: the model is fixed, but local API credentials are pending.
-- No Bandit or custom AST scan: Member 2 adapters are placeholders returning `not_run`.
+- No live model request: API credentials and final model choice are pending.
+- No Bandit or custom AST scan of an LLM-generated candidate (none exists yet); see below
+  for the rule-fixture validation.
 - No candidate functional/security pytest or Docker execution: Member 3 integration is pending.
 - No security score, vulnerability discovery, detector comparison, or repair claim.
 
 Prepared local artifacts are ignored by Git. Repeatable commands and interfaces are
 in the README and INTERFACES.md. Run the next real experiment in a fresh output
 directory to preserve the original records.
+
+## Static analysis (Member 2) — 2026-10-19
+
+Python 3.11.17, Bandit 1.9.4, AST rule set 0.1.0. These are rule tests on hand-written
+fixtures, not results on generated candidates.
+
+| Check | Observed result |
+|---|---|
+| `python -m pytest -q` (harness + static tests) | **35 passed** |
+| Rule fixtures: exact expected (rule, line) pairs | `AST-SQL-001`: 5 reported in unsafe, 0 in safe; `AST-CMD-001`: 6 in unsafe, 0 in safe |
+| Mutants of the rule code (5 deliberate breakages) | Each made at least one static test fail |
+| `security-eval static tests/fixtures/static does_not_exist.py` | Completed scans; syntax-error file and missing path reported as errors without stopping the batch (exit 1) |
+| Contracts written by that run | All pass `security-eval validate analysis` |
+| `python -m pip check` | No broken requirements found |
