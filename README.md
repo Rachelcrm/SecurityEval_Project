@@ -11,10 +11,13 @@ before exploring LLM-based repair. Automated repair is outside the first-week sc
 - Implemented: a Python 3.11 project scaffold, three traceable samples adapted from
   SecurityEval, shared JSON schemas, Member 1's OpenAI Responses API generation and
   artifact recording, offline harness tests, and integration points for all three members.
-- Not yet run: live LLM generation. API credentials and the final model choice are pending.
-- Implemented for Member 3: a bounded Docker runner and functional/security tests
-  for the three adapted samples. See [Docker execution](docker/README.md) for setup
-  and control validation. Static adapters still return `not_run`.
+- Not yet run: live LLM generation. API credentials are pending.
+- Implemented (Member 2): Bandit integration, two custom AST rules validated on hand-written
+  fixtures, and `security-eval static`. See [Static Analysis](docs/STATIC_ANALYSIS.md).
+- Implemented (Member 3): a bounded Docker runner and functional/security tests
+  for the three adapted samples. See [Docker execution](docker/README.md).
+- Selected for the first run: `gpt-5.4-mini-2026-03-17` with fixed parameters.
+  Live generation and evaluation of actual model candidates remain pending.
 - By default, `pytest` tests the harness only. **Passing harness tests does not establish
   the functionality or security of generated code.** The `generated` status indicates
   a complete response containing parseable Python and the expected entry point;
@@ -85,18 +88,17 @@ MSR4P&S 2022. [DOI](https://doi.org/10.1145/3549035.3561184).
 
 ## Member 1: Code Generation and Artifact Recording
 
-Prepare a request without making an API call or producing `code.py`:
+Prepare all three requests without making an API call or producing `code.py`:
 
 ```bash
-security-eval generate sql_delete_user \
+security-eval generate-batch \
   --model gpt-5.4-mini-2026-03-17 --reasoning-effort none \
-  --dry-run --out artifacts/sql-prepared-001
+  --dry-run --out artifacts/member1-prepared-001
 ```
 
-The model above is an example. Select a Responses API model available to the project
-account; the application requires an explicit model choice. Use the same model version,
-prompt configuration, and output budget across the first three candidates. Preserve
-each initial output before evaluation rather than selecting only favorable outputs.
+The first experiment uses the dated model snapshot shown above so all three candidates
+are generated with the same reproducible configuration. Preserve each initial output
+before evaluation rather than selecting only favorable outputs.
 
 Live generation requires `OPENAI_API_KEY` in the local environment. The following zsh
 commands read the key without displaying it or placing its value in shell history:
@@ -105,22 +107,22 @@ commands read the key without displaying it or placing its value in shell histor
 read -s "OPENAI_API_KEY?OpenAI API key: "
 export OPENAI_API_KEY
 printf '\n'
-security-eval generate sql_delete_user \
+security-eval generate-batch \
   --model gpt-5.4-mini-2026-03-17 --reasoning-effort none \
-  --max-output-tokens 4096 --out artifacts/sql-live-001
+  --max-output-tokens 4096 --out artifacts/member1-live-001
 unset OPENAI_API_KEY
 ```
 
 For bash, replace the `read` command with
 `read -s -p 'OpenAI API key: ' OPENAI_API_KEY`.
 `.env.example` documents the variables; the application does not automatically load `.env`.
-For the other samples, change the sample ID and use a new output directory.
 `OPENAI_MODEL` can be used instead of `--model`.
 
 The `--temperature` parameter is omitted by default. Set it only when the selected
 model supports it. Requests have a 90-second timeout and no automatic retries.
 
-Each attempt saves `sample.json`, `request.json`, and `generation.json`. After receiving
+The batch writes `manifest.json` and one subdirectory per sample. Each attempt saves
+`sample.json`, `request.json`, and `generation.json`. After receiving
 a response, it also saves `response.json` and `completion.txt`, plus `code.py` when source
 can be extracted. Records include request and code hashes, requested and returned model
 IDs, timestamps, response ID, usage, and error status. Existing output directories are
@@ -131,6 +133,8 @@ Candidate code is parsed but **never imported or executed** during generation.
 Experiment artifacts are ignored by Git by default; review them before archiving or sharing.
 
 API reference: [Responses API](https://developers.openai.com/api/reference/python/resources/responses/methods/create).
+The complete Member 1 run and review checklist is in
+[Member 1 Handoff](docs/MEMBER1_HANDOFF.md).
 
 ## Analyzer Integration
 
@@ -139,9 +143,16 @@ security-eval evaluate artifacts/sql-live-001 --out artifacts/sql-analysis-001
 security-eval validate analysis artifacts/sql-analysis-001/bandit.json
 ```
 
-Static adapters currently return `not_run`, so `evaluate` returns a nonzero exit code
-even when dynamic testing completes. The dynamic adapter requires a locally built
-image and a running Docker engine; infrastructure failures are recorded as `error`.
+Bandit, AST, and Docker adapters are connected. Dynamic execution requires a locally
+built `security-eval-tests:dev` image and a running Docker engine; infrastructure
+failures are recorded as `error`. To run only static analysis:
+
+```bash
+security-eval static artifacts/sql-live-001 --out artifacts/sql-static-001
+```
+
+This prints a summary and writes `static_summary.json` plus per-tool contracts and evidence;
+see [Static Analysis](docs/STATIC_ANALYSIS.md).
 The pipeline verifies the candidate's code hash to ensure that each analyzer receives
 the same source. Dynamic testing executes candidate code only inside the restricted Docker container.
 
@@ -155,7 +166,7 @@ no findings.
 | Member | Primary files and directories | Expected deliverables |
 |---|---|---|
 | Member 1 / Susie Zhong | `data/`, `generation.py`, `scripts/verify_source.py` | Three live-generated candidates with request and response records |
-| Member 2 | `analyzers/static.py`, new rule modules, and rule unit tests | Bandit integration, one or two AST rules, and actual JSON findings |
+| Member 2 / Jiayi Li| `analyzers/static.py`, new rule modules, and rule unit tests | Bandit integration, one or two AST rules, and actual JSON findings |
 | Member 3 | `analyzers/dynamic.py`, `tests/candidates/`, `docker/` | Isolated execution, functional and security tests, and supporting evidence |
 
 See [Shared Contracts](docs/INTERFACES.md) for the complete handoff. Start with

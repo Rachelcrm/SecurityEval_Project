@@ -6,14 +6,15 @@ They are not candidate functionality/security results and are not GitHub CI resu
 | Check | Observed result |
 |---|---|
 | Install pinned requirements and editable package | Successful |
-| `python -m pytest -q` | **23 passed in 1.03s** in the installed project |
+| `python -m pytest -q` | **27 passed** in the installed project |
 | `python -m pip check` | No broken requirements found |
 | `python scripts/verify_source.py --download` | 3 original prompts verified against pinned upstream data |
 | `security-eval samples` | 3 validated sample records listed |
-| Dry-run preparation for each of the 3 samples | `prepared`; no API call and no generated code |
+| Batch dry-run preparation for all 3 samples | `complete`; each sample is `prepared`, with no API call or generated code |
 | `git diff --check` | No whitespace errors |
 
-The tests exercise contract rejection, duplicate sample handling, pending analyzer
+The tests exercise contract rejection, duplicate sample handling, batch preparation,
+credential checks before batch output creation, pending analyzer
 states, code extraction, missing credentials, API failure, empty/invalid/incomplete
 outputs, preservation of raw output, prevention of candidate execution, the real
 OpenAI SDK with an explicitly mocked HTTP transport, and pipeline hash checks.
@@ -22,13 +23,28 @@ Synthetic fixture responses exist only in temporary test directories.
 ## Not run / not implemented
 
 - No live model request: API credentials and final model choice are pending.
-- No Bandit or custom AST scan: Member 2 adapters are placeholders returning `not_run`.
-- No candidate functional/security pytest or Docker execution: Member 3 integration is pending.
+- No Bandit or custom AST scan of an LLM-generated candidate (none exists yet); see below
+  for the rule-fixture validation.
+- At the scaffold stage, candidate Docker execution was pending; see Member 3 validation below.
 - No security score, vulnerability discovery, detector comparison, or repair claim.
 
 Prepared local artifacts are ignored by Git. Repeatable commands and interfaces are
 in the README and INTERFACES.md. Run the next real experiment in a fresh output
 directory to preserve the original records.
+
+## Static analysis (Member 2) — 2026-10-19
+
+Python 3.11.17, Bandit 1.9.4, AST rule set 0.1.0. These are rule tests on hand-written
+fixtures, not results on generated candidates.
+
+| Check | Observed result |
+|---|---|
+| `python -m pytest -q` (harness + static tests) | **35 passed** |
+| Rule fixtures: exact expected (rule, line) pairs | `AST-SQL-001`: 5 reported in unsafe, 0 in safe; `AST-CMD-001`: 6 in unsafe, 0 in safe |
+| Mutants of the rule code (5 deliberate breakages) | Each made at least one static test fail |
+| `security-eval static tests/fixtures/static does_not_exist.py` | Completed scans; syntax-error file and missing path reported as errors without stopping the batch (exit 1) |
+| Contracts written by that run | All pass `security-eval validate analysis` |
+| `python -m pip check` | No broken requirements found |
 
 ## Member 3 dynamic execution — 2026-10-21
 
@@ -46,5 +62,22 @@ directory to preserve the original records.
   `security-eval-tests:dev` image with the new runner and current tests copied in.
   Exact built image identity is retained in each environment record. A clean online
   Dockerfile build remains to be verified; no clean-build success is claimed.
-- Static analysis and automatic repair remain unimplemented. No live LLM evaluation
+- Automatic repair remains unimplemented. No live LLM evaluation
   was performed during this Member 3 validation.
+
+## Clean image build follow-up — 2026-10-21
+
+The project owner subsequently ran `docker build --pull --no-cache -f
+docker/Dockerfile -t security-eval-tests:clean .` successfully and verified all seven
+controls with that image. All printed `OK`, including confirmed cleanup for import
+failure and timeout. Local evidence is in `artifacts/member3-clean-check-001/`.
+This supersedes the earlier clean-build limitation and remains handwritten-control
+validation, not a live LLM experiment.
+
+## Combined branch merge validation — 2026-10-21
+
+After integrating Member 1/2 main changes with Member 3: `python -m pytest -q`
+reported **48 passed in 1.80s** and `python -m pip check` found no broken requirements.
+The pipeline tests exercise real Bandit/AST execution with synthetic Docker responses
+and verify shared run/code identities and evidence paths. They do not claim a live
+LLM run or a new real-Docker experiment.

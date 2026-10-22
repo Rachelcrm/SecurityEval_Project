@@ -66,8 +66,9 @@ times, at least one evidence path and no tool-level error. Findings use lowercas
    from model generations. Record actual tool versions and evidence files.
 4. Return our analysis contract; do not replace it with raw Bandit JSON.
 
-Bandit is an optional dependency: `python -m pip install '.[static]'`. Pin its resolved
-version for experiments. Do not accidentally scan `.venv` or the entire upstream corpus.
+Bandit is an optional dependency: `python -m pip install '.[static]'`; `requirements.txt`
+pins `bandit==1.9.4`. `BanditAnalyzer(out_dir)` and `ASTAnalyzer(out_dir)` write evidence
+into the analysis output directory. Usage, rules and limitations: `docs/STATIC_ANALYSIS.md`. Do not accidentally scan `.venv` or the entire upstream corpus.
 
 ### Member 3 checklist
 
@@ -84,6 +85,7 @@ version for experiments. Do not accidentally scan `.venv` or the entire upstream
 
 Unit tests use explicitly synthetic API fixtures and temporary directories. They are
 harness checks, never SecurityEval scores or evidence of a live API call. Prepared
-requests have no generated code. The scaffold claims no Bandit/AST/Docker results.
+requests have no generated code. Static rule tests use hand-written fixtures in
+`tests/fixtures/static/`; they are not candidate results. No Docker results are claimed.
 Use hashes plus reviewed evidence to build a later comparison table; do not infer
 that dynamic analysis improves recall until actual runs support that claim.

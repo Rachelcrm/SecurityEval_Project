@@ -18,9 +18,9 @@ security-eval evaluate artifacts/sql-live-001 --out artifacts/sql-analysis-001
 
 `DockerPytestAnalyzer(evidence_dir=...)` enables execution; without an evidence
 directory it explicitly returns `not_run`. The pipeline supplies that directory.
-No Docker fallback executes candidates on the host. Static adapters may still return
-`not_run`, so the overall evaluate command may return nonzero despite a completed
-dynamic report. Inspect `pytest-docker.json`.
+No Docker fallback executes candidates on the host. The pipeline runs Bandit, AST rules, and Docker testing. Infrastructure errors in
+any adapter make the evaluate command return nonzero. Inspect each tool report;
+`completed` does not imply that every test passed or that there are no findings.
 
 The runner snapshots candidate bytes, verifies the hash, resolves the image to an
 immutable local image ID, and never pulls an image during candidate execution. It
