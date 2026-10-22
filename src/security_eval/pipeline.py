@@ -1,4 +1,4 @@
-"""Connect generated artifacts to the three analyzer contracts without executing code."""
+"""Connect generated artifacts to the three analyzer contracts with isolated candidate execution."""
 import json
 from pathlib import Path
 
@@ -30,7 +30,12 @@ def evaluate(run_dir: Path, out: Path) -> list[dict]:
     code, sample, run_id = load_candidate(run_dir)
     out.mkdir(parents=True, exist_ok=False)
     results = []
-    for analyzer in (BanditAnalyzer(out), ASTAnalyzer(out), DockerPytestAnalyzer()):
+    analyzers = (
+        BanditAnalyzer(out),
+        ASTAnalyzer(out),
+        DockerPytestAnalyzer(evidence_dir=out / "pytest-docker"),
+    )
+    for analyzer in analyzers:
         result = analyzer.analyze(code, sample, run_id)
         validate("analysis", result)
         write_json(out / (result["tool"] + ".json"), result)
