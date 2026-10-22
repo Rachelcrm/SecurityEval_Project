@@ -9,13 +9,17 @@ from test_generation import fixture_client
 from test_contracts import SAMPLES
 
 
-def test_pipeline_emits_only_pending_results_and_detects_tampering(tmp_path):
+def test_pipeline_records_dynamic_error_and_detects_tampering(tmp_path, monkeypatch):
+    from security_eval.analyzers import dynamic
+    def unavailable(*args, **kwargs):
+        raise FileNotFoundError("Docker mocked unavailable")
+    monkeypatch.setattr(dynamic, "command", unavailable)
     sample = load_samples(SAMPLES)[0]
     run = tmp_path / "run"
     generate(sample, run, "fixture-only", client=fixture_client("def remove_user(conn, username): return 0"))
     results = evaluate(run, tmp_path / "analysis")
     assert len(results) == 3
-    assert all(r["status"] == "not_run" for r in results)
+    assert [r["status"] for r in results] == ["not_run", "not_run", "error"]
     assert json.loads((tmp_path / "analysis/bandit.json").read_text())["findings"] == []
     (run / "code.py").write_text("changed")
     with pytest.raises(ValueError, match="hash mismatch"):

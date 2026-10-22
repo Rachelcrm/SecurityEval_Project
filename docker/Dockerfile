@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r /opt/requirements-test.txt \
     && useradd --uid 10001 --gid 10001 --no-create-home runner \
     && mkdir /candidate
 
+COPY docker/run_tests.py /opt/run_tests.py
 COPY docker/pytest.ini /tests/pytest.ini
 COPY tests/candidates/ /tests/
 

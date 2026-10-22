@@ -30,6 +30,9 @@ class Analyzer:
 `pipeline.evaluate()` passes the same resolved file to each adapter. Implement
 `BanditAnalyzer` and `ASTAnalyzer` in `analyzers/static.py`, and
 `DockerPytestAnalyzer` in `analyzers/dynamic.py`. Never modify the candidate.
+The pipeline supplies `evidence_dir=out / "pytest-docker"` to the dynamic adapter;
+without this explicit configuration it returns `not_run`. Evidence paths are relative
+to the parent of that directory.
 `run_id` currently combines request and code hashes; use separate output directories
 for repeated attempts. `tool` is one of `bandit`, `ast`, `pytest-docker`.
 

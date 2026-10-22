@@ -29,3 +29,22 @@ Synthetic fixture responses exist only in temporary test directories.
 Prepared local artifacts are ignored by Git. Repeatable commands and interfaces are
 in the README and INTERFACES.md. Run the next real experiment in a fresh output
 directory to preserve the original records.
+
+## Member 3 dynamic execution — 2026-10-21
+
+- Offline harness: **31 passed**; `git diff --check` clean.
+- Seven real Docker handwritten-control checks completed with expected outcomes:
+  SQL safe 7 passed; SQL unsafe 3 failed/4 passed; SQL noop 5 failed/2 passed;
+  command safe 18 passed; path safe 9 passed; import failure recorded as error;
+  infinite loop recorded as timeout error with a three-second execution deadline.
+- Container removal was confirmed by querying Docker for every control, including
+  timeout and import failure. Results are local validation, not model/benchmark scores.
+- Evidence: local ignored `artifacts/member3-validation-20261021/`; each case has
+  normalized analysis JSON, environment/commands, logs, and report when available.
+- Full Dockerfile rebuild waited on remote Python base-image metadata and was canceled.
+  Real checks used `security-eval-tests:validation`, derived from the existing local
+  `security-eval-tests:dev` image with the new runner and current tests copied in.
+  Exact built image identity is retained in each environment record. A clean online
+  Dockerfile build remains to be verified; no clean-build success is claimed.
+- Static analysis and automatic repair remain unimplemented. No live LLM evaluation
+  was performed during this Member 3 validation.

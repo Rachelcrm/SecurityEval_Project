@@ -1,0 +1,9 @@
+**
+!docker/
+!docker/Dockerfile
+!docker/requirements-test.txt
+!docker/pytest.ini
+!docker/run_tests.py
+!tests/
+!tests/candidates/
+!tests/candidates/*.py

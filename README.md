@@ -12,8 +12,9 @@ before exploring LLM-based repair. Automated repair is outside the first-week sc
   SecurityEval, shared JSON schemas, Member 1's OpenAI Responses API generation and
   artifact recording, offline harness tests, and integration points for all three members.
 - Not yet run: live LLM generation. API credentials and the final model choice are pending.
-- Not yet implemented: Bandit and AST analysis, the Docker runner, and candidate
-  functional and security tests. The analyzer adapters currently return `not_run`.
+- Implemented for Member 3: a bounded Docker runner and functional/security tests
+  for the three adapted samples. See [Docker execution](docker/README.md) for setup
+  and control validation. Static adapters still return `not_run`.
 - By default, `pytest` tests the harness only. **Passing harness tests does not establish
   the functionality or security of generated code.** The `generated` status indicates
   a complete response containing parseable Python and the expected entry point;
@@ -138,9 +139,11 @@ security-eval evaluate artifacts/sql-live-001 --out artifacts/sql-analysis-001
 security-eval validate analysis artifacts/sql-analysis-001/bandit.json
 ```
 
-All three adapters currently return `not_run`, so `evaluate` returns a nonzero exit code.
+Static adapters currently return `not_run`, so `evaluate` returns a nonzero exit code
+even when dynamic testing completes. The dynamic adapter requires a locally built
+image and a running Docker engine; infrastructure failures are recorded as `error`.
 The pipeline verifies the candidate's code hash to ensure that each analyzer receives
-the same source. It does not execute candidate code.
+the same source. Dynamic testing executes candidate code only inside the restricted Docker container.
 
 Analyzer implementations must return records that pass the schemas described in
 [Shared Contracts](docs/INTERFACES.md). An empty findings list does not establish safety.
